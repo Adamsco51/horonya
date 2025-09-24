@@ -75,6 +75,11 @@ class TraitementSuivie extends Component
     {
         $this->validate();
 
+        // Valider les prérequis de l'étape
+        if (!$this->validateEtapePrerequisites($this->selectedEtapeId)) {
+            return;
+        }
+
         // Vérifier si l'étape n'a pas déjà été ajoutée
         $existingEtape = $this->suivie->suiviTraitements()
             ->where('etape_traitement_id', $this->selectedEtapeId)
@@ -110,6 +115,9 @@ class TraitementSuivie extends Component
             'statut' => $this->statut,
         ]);
 
+        // Mettre à jour automatiquement le statut du suivi
+        $this->suivie->updateStatusAutomatiquement();
+
         // Réinitialiser le formulaire
         $this->resetForm();
         
@@ -118,6 +126,9 @@ class TraitementSuivie extends Component
 
         // Message de succès
         session()->flash('message', 'Étape ajoutée avec succès.');
+
+        // Vérifier si des notifications doivent être envoyées
+        $this->checkAndSendNotifications();
     }
 
     /**
@@ -129,9 +140,75 @@ class TraitementSuivie extends Component
         
         if ($suiviTraitement && $suiviTraitement->suivie_id === $this->suivie->id) {
             $suiviTraitement->update(['statut' => $nouveauStatut]);
+            
+            // Mettre à jour automatiquement le statut du suivi
+            $this->suivie->updateStatusAutomatiquement();
+            
             $this->loadData();
             session()->flash('message', 'Statut mis à jour avec succès.');
+            
+            // Vérifier si des notifications doivent être envoyées
+            $this->checkAndSendNotifications();
         }
+    }
+
+    /**
+     * Vérifier et envoyer des notifications si nécessaire
+     */
+    private function checkAndSendNotifications()
+    {
+        // Notification si toutes les étapes obligatoires sont terminées
+        if ($this->suivie->etapes_obligatoires_terminees) {
+            session()->flash('info', 'Toutes les étapes obligatoires ont été terminées avec succès.');
+        }
+
+        // Notification si le traitement est terminé
+        if ($this->suivie->traitement_termine) {
+            session()->flash('success', 'Le traitement de ce suivi est maintenant terminé.');
+        }
+
+        // Notification si des étapes obligatoires sont manquantes
+        $etapesManquantes = $this->suivie->etapes_obligatoires_manquantes;
+        if ($etapesManquantes->count() > 0) {
+            $noms = $etapesManquantes->pluck('nom')->join(', ');
+            session()->flash('warning', "Étapes obligatoires manquantes : {$noms}");
+        }
+
+        // Notification si en retard
+        if ($this->suivie->isLate()) {
+            $joursRetard = abs($this->suivie->remainingDays());
+            session()->flash('error', "Ce suivi est en retard de {$joursRetard} jour(s).");
+        }
+    }
+
+    /**
+     * Valider les prérequis avant d'ajouter une étape
+     */
+    private function validateEtapePrerequisites($etapeId)
+    {
+        $etape = EtapeTraitement::find($etapeId);
+        
+        if (!$etape) {
+            return false;
+        }
+
+        // Vérifier si des étapes précédentes obligatoires sont manquantes
+        $etapesPrecedentes = EtapeTraitement::active()
+            ->where('obligatoire', true)
+            ->where('ordre', '<', $etape->ordre)
+            ->get();
+
+        $etapesRealisees = $this->suivie->suiviTraitements()->pluck('etape_traitement_id');
+        
+        foreach ($etapesPrecedentes as $etapePrecedente) {
+            if (!$etapesRealisees->contains($etapePrecedente->id)) {
+                $this->addError('selectedEtapeId', 
+                    "L'étape '{$etapePrecedente->nom}' doit être réalisée avant cette étape.");
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

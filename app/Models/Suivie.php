@@ -87,6 +87,77 @@ class Suivie extends Model
     }
 
     /**
+     * Mettre à jour automatiquement le statut basé sur la progression des étapes.
+     */
+    public function updateStatusAutomatiquement()
+    {
+        // Si aucune étape n'a été commencée, rester en stockage
+        if ($this->suiviTraitements()->count() === 0) {
+            if ($this->status !== self::STATUS_STOCKAGE) {
+                $this->update(['status' => self::STATUS_STOCKAGE]);
+            }
+            return;
+        }
+
+        // Si des étapes sont en cours ou terminées, passer en traitement
+        if ($this->status === self::STATUS_STOCKAGE && $this->suiviTraitements()->count() > 0) {
+            $this->update(['status' => self::STATUS_TRAITEMENT]);
+        }
+
+        // Mettre à jour l'état basé sur la progression
+        $this->updateEtatAutomatiquement();
+    }
+
+    /**
+     * Mettre à jour automatiquement l'état basé sur la progression et l'ETA.
+     */
+    public function updateEtatAutomatiquement()
+    {
+        // Si le traitement est terminé
+        if ($this->traitement_termine) {
+            if ($this->etat !== self::ETAT_ARRIVE) {
+                $this->update(['etat' => self::ETAT_ARRIVE]);
+            }
+            return;
+        }
+
+        // Vérifier si en retard
+        if ($this->isLate()) {
+            if ($this->etat !== self::ETAT_RETARD) {
+                $this->update(['etat' => self::ETAT_RETARD]);
+            }
+            return;
+        }
+
+        // Sinon, en cours
+        if ($this->etat !== self::ETAT_EN_COURS) {
+            $this->update(['etat' => self::ETAT_EN_COURS]);
+        }
+    }
+
+    /**
+     * Vérifier si des étapes obligatoires sont manquantes.
+     */
+    public function getEtapesObligatoiresManquantesAttribute()
+    {
+        $etapesObligatoires = EtapeTraitement::active()->where('obligatoire', true)->get();
+        $etapesRealisees = $this->suiviTraitements()->pluck('etape_traitement_id');
+        
+        return $etapesObligatoires->whereNotIn('id', $etapesRealisees);
+    }
+
+    /**
+     * Vérifier si toutes les étapes obligatoires sont terminées.
+     */
+    public function getEtapesObligatoiresTermineesAttribute()
+    {
+        $etapesObligatoires = EtapeTraitement::active()->where('obligatoire', true)->pluck('id');
+        $etapesTerminees = $this->suiviTraitements()->termine()->pluck('etape_traitement_id');
+        
+        return $etapesObligatoires->diff($etapesTerminees)->isEmpty();
+    }
+
+    /**
      * Relation avec le BL (Bills of Lading)
      */
     public function bilsOflading(): BelongsTo

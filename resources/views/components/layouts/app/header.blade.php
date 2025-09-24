@@ -11,11 +11,7 @@
                 <x-app-logo />
             </a>
 
-            <flux:navbar class="-mb-px max-lg:hidden">
-                <flux:navbar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
-                </flux:navbar.item>
-            </flux:navbar>
+            <!-- Navigation supprimée du header pour éviter les doublons avec le sidebar -->
 
             <flux:spacer />
 
@@ -79,11 +75,26 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('Platform')">
-                    <flux:navlist.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                      {{ __('Dashboard') }}
-                    </flux:navlist.item>
+                <flux:navlist.group :heading="__('Opération')" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Tableau de Board') }}</flux:navlist.item>
+                    <flux:navlist.item icon="chart-bar" :href="route('suivies.index')" :current="request()->routeIs('suivies.*')" wire:navigate>{{ __('Suivie') }}</flux:navlist.item>
                 </flux:navlist.group>
+                
+                <flux:navlist.group :heading="__('Gestion')" class="grid">
+                    <flux:navlist.item icon="fill-text" :href="route('bl.index')" :current="request()->routeIs('bl.*')" wire:navigate>{{ __('Connaissement') }}</flux:navlist.item>
+                    <flux:navlist.item icon="users" :href="route('clients.index')" :current="request()->routeIs('clients.*')" wire:navigate>{{ __('Clients') }}</flux:navlist.item>
+                    <flux:navlist.item icon="briefcase" :href="route('type-travail.index')" :current="request()->routeIs('type-travail.*')" wire:navigate>{{ __('Types de Travail') }}</flux:navlist.item>
+                </flux:navlist.group>
+
+                <flux:navlist.group :heading="__('Configuration')" class="grid">
+                    <flux:navlist.item icon="cog-6-tooth" :href="route('configuration.index')" :current="request()->routeIs('configuration.*')" wire:navigate>{{ __('Configuration') }}</flux:navlist.item>
+                </flux:navlist.group>
+
+                @can('viewAny', App\Models\User::class)
+                    <flux:navlist.group :heading="__('Administration')" class="grid">
+                        <flux:navlist.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.*')" wire:navigate>{{ __('Gestion des Utilisateurs') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                @endcan   
             </flux:navlist>
 
             <flux:spacer />

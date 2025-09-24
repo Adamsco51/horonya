@@ -10,14 +10,15 @@
                 <p class="mt-2 text-gray-600">Suivez l'état de vos expéditions et livraisons</p>
             </div>
             @can('create_suivies')
-                <button 
-                    wire:click="$dispatch('openModal', { component: 'suivie.create-suivie' })"
+                <a 
+                    wire:navigate
+                    href="{{ route('suivies.create') }}"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     <span>Nouveau Suivie</span>
-                </button>
+                </a>
             @endcan
         </div>
 
@@ -160,38 +161,38 @@
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <p class="font-medium text-gray-900">{{ $suivie->client->nom ?? 'N/A' }}</p>
-                                        <p class="text-sm text-gray-500">{{ $suivie->client->email ?? '' }}</p>
-                                    </div>
-                                </td>
+                    <div>
+                        <p class="font-medium text-gray-900">{{ $suivie->client->name_of_entreprise ?? 'N/A' }}</p>
+                        <p class="text-sm text-gray-500">{{ $suivie->client->email ?? '' }}</p>
+                    </div>
+                </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="text-sm text-gray-900">
-                                        {{ $suivie->eta ? $suivie->eta->format('d/m/Y') : 'Non défini' }}
-                                    </span>
-                                </td>
+                    <span class="text-sm text-gray-900">
+                        {{ $suivie->ETA ? $suivie->ETA->format('d/m/Y') : 'Non défini' }}
+                    </span>
+                </td>
 
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($suivie->eta)
-                                        @php
-                                            $joursRestants = (int) round(now()->diffInDays($suivie->eta, false));
-                                            $couleur = $joursRestants < 0 ? 'text-red-600' : 
-                                                      ($joursRestants <= 3 ? 'text-orange-600' : 'text-green-600');
-                                        @endphp
-                                        <span class="{{ $couleur }} font-medium">
-                                            @if($joursRestants < 0)
-                                                Retard de {{ abs($joursRestants) }} jour(s)
-                                            @elseif($joursRestants == 0)
-                                                Aujourd'hui
-                                            @else
-                                                {{ $joursRestants }} jour(s)
-                                            @endif
-                                        </span>
-                                    @else
-                                        <span class="text-gray-400">-</span>
-                                    @endif
-                                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    @if($suivie->ETA)
+                        @php
+                            $joursRestants = $suivie->jours_restants;
+                            $couleur = $joursRestants < 0 ? 'text-red-600' : 
+                                      ($joursRestants <= 3 ? 'text-orange-600' : 'text-green-600');
+                        @endphp
+                        <span class="{{ $couleur }} font-medium">
+                            @if($joursRestants < 0)
+                                Retard de {{ abs($joursRestants) }} jour(s)
+                            @elseif($joursRestants == 0)
+                                Aujourd'hui
+                            @else
+                                {{ $joursRestants }} jour(s)
+                            @endif
+                        </span>
+                    @else
+                        <span class="text-gray-400">-</span>
+                    @endif
+                </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
@@ -234,23 +235,25 @@
 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex space-x-2">
-                                        <button 
-                                            wire:click="$dispatch('openModal', { component: 'suivie.show-suivie', arguments: { suivie: {{ $suivie->id }} } })"
+                                        <a 
+                                            wire:navigate
+                                            href="{{ route('suivies.show', $suivie->id) }}"
                                             class="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
-                                        </button>
+                                        </a>
                                         
                                         @can('edit_suivies')
-                                        <button 
-                                            wire:click="$dispatch('openModal', { component: 'suivie.edit-suivie', arguments: { suivie: {{ $suivie->id }} } })"
+                                        <a 
+                                            wire:navigate
+                                            href="{{ route('suivies.edit', $suivie->id) }}"
                                             class="text-indigo-600 hover:text-indigo-900 p-1 rounded transition-colors">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
-                                        </button>
+                                        </a>
                                         @endcan
                                         
                                         @can('delete_suivies')
