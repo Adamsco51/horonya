@@ -21,7 +21,12 @@ test('new users can register', function () {
 
     $response
         ->assertHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('login', absolute: false)); // Les nouveaux utilisateurs sont redirigés vers login car ils sont inactifs
 
-    $this->assertAuthenticated();
+    // Vérifier que l'utilisateur a été créé mais n'est pas authentifié (car inactif)
+    $this->assertDatabaseHas('users', [
+        'email' => 'test@example.com',
+        'is_active' => false,
+    ]);
+    $this->assertGuest();
 });
